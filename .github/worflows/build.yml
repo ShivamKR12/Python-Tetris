@@ -1,4 +1,4 @@
-name: Build Windows Executable
+name: Build and Release
 
 on:
   [push, workflow_dispatch]
@@ -8,8 +8,27 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run ci]')
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: Tetris.exe
+            asset_name: Tetris-Windows
+            separator: ";"
+            icon: icon.ico
+          - os: macos-latest
+            artifact_name: Tetris
+            asset_name: Tetris-macOS
+            separator: ":"
+            icon: icon.png
+          - os: ubuntu-latest
+            artifact_name: Tetris
+            asset_name: Tetris-Linux
+            separator: ":"
+            icon: icon.png
 
     steps:
       - name: Checkout repository
@@ -27,23 +46,31 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller --noconsole --onefile --name Tetris --icon=icon.ico --add-data "icon.png;." --add-data "img;img" --add-data "font;font" main.py
+          pyinstaller --noconsole --onefile --name Tetris --icon=${{ matrix.icon }} --add-data "icon.png${{ matrix.separator }}." --add-data "img${{ matrix.separator }}img" --add-data "font${{ matrix.separator }}font" main.py
           
-      - name: Archive executable
+      - name: Zip Executable (Unix)
+        if: matrix.os != 'windows-latest'
         run: |
-          Compress-Archive -Path dist\Tetris.exe -DestinationPath dist\Tetris-Windows.zip
+          cd dist
+          zip ../${{ matrix.asset_name }}.zip ${{ matrix.artifact_name }}
+
+      - name: Zip Executable (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd dist
+          Compress-Archive -Path ${{ matrix.artifact_name }} -DestinationPath ..\${{ matrix.asset_name }}.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Tetris-Windows
-          path: dist/Tetris-Windows.zip
+          name: ${{ matrix.asset_name }}
+          path: ${{ matrix.asset_name }}.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
           name: Tetris v${{ github.run_number }}
-          files: dist/Tetris-Windows.zip
+          files: ${{ matrix.asset_name }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
