@@ -1,0 +1,49 @@
+name: Build Windows Executable
+
+on:
+  [push, workflow_dispatch]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run ci]')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pygame-ce pyinstaller
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller --noconsole --onefile --name Tetris --icon=icon.ico --add-data "icon.png;." --add-data "img;img" --add-data "font;font" main.py
+          
+      - name: Archive executable
+        run: |
+          Compress-Archive -Path dist\Tetris.exe -DestinationPath dist\Tetris-Windows.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tetris-Windows
+          path: dist/Tetris-Windows.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Tetris v${{ github.run_number }}
+          files: dist/Tetris-Windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,3 +1,43 @@
+=== generate_icon.py ===
+import pygame
+
+pygame.init()
+
+# Load the game's font (adjust size as needed for a crisp icon)
+font = pygame.font.Font('font/font.ttf', 120)
+
+text = "TETRIS"
+colors = [
+    (255, 0, 0),       # Red
+    (255, 127, 0),     # Orange
+    (255, 255, 0),     # Yellow
+    (0, 255, 0),       # Green
+    (0, 0, 255),       # Blue
+    (148, 0, 211)      # Purple
+]
+
+rendered_letters = []
+total_width, max_height = 0, 0
+
+# Render each letter and calculate the total size required for the image
+for i, char in enumerate(text):
+    rendered = font.render(char, True, colors[i % len(colors)])
+    rendered_letters.append(rendered)
+    total_width += rendered.get_width()
+    max_height = max(max_height, rendered.get_height())
+
+icon_surface = pygame.Surface((total_width, max_height), pygame.SRCALPHA)
+
+current_x = 0
+for rendered in rendered_letters:
+    icon_surface.blit(rendered, (current_x, 0))
+    current_x += rendered.get_width()
+
+pygame.image.save(icon_surface, 'icon.png')
+print("Success: 'icon.png' generated!")
+pygame.quit()
+
+=== main.py ===
 import pygame
 from copy import deepcopy
 from random import choice, randrange
@@ -206,3 +246,164 @@ while True:
     sc.blit(pygame.transform.scale(virtual_sc, (window_w, window_h)), (0, 0))
     pygame.display.flip()
     clock.tick(FPS)
+
+=== main.spec ===
+# -*- mode: python ; coding: utf-8 -*-
+
+
+a = Analysis(
+    ['main.py'],
+    pathex=[],
+    binaries=[],
+    datas=[('img', 'img'), ('font', 'font')],
+    hiddenimports=[],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+    optimize=0,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name='Terris',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon='icon.ico'
+)
+
+=== README.md ===
+<h1 align="center">Python-Tetris</h1>
+
+<p align="center">
+  A classic Tetris game built using Python and the Pygame library.
+</p>
+
+## 📸 Screenshot
+
+![tetris](screenshot/1.png "Tetris")
+
+## ✨ Features
+
+- **Classic Gameplay**: Experience the traditional Tetris mechanics you know and love.
+- **Score Tracking**: Points are awarded based on the number of lines cleared simultaneously.
+- **High Score Persistence**: The game remembers your highest score across sessions (saved in the `record` file).
+- **Dynamic Window Scaling**: Automatically scales the game to fit your screen height while maintaining the aspect ratio.
+- **Executable Ready**: Pre-configured to easily build into a standalone executable using PyInstaller.
+
+## 🎮 Controls
+
+| Key | Action |
+| :--- | :--- |
+| `Left Arrow` | Move piece left |
+| `Right Arrow` | Move piece right |
+| `Up Arrow` | Rotate piece |
+| `Down Arrow` | Accelerate drop speed |
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.x
+- Pygame-ce
+
+### Installation & Running
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ShivamKR12/Python-Tetris.git
+   cd Python-Tetris
+   ```
+2. Install the required dependencies:
+   ```bash
+   pip install pygame-ce
+   ```
+3. Run the game:
+   ```bash
+   python main.py
+   ```
+
+## 📦 Packaging (Standalone Executable)
+
+To build the game into a single executable file that can be shared without requiring Python to be installed:
+
+1. Install PyInstaller:
+   ```bash
+   pip install pyinstaller
+   ```
+2. Run the build command (Windows):
+   ```bash
+   pyinstaller --noconsole --onefile --add-data "img;img" --add-data "font;font" main.py
+   ```
+   *(For macOS/Linux, use `:` instead of `;` in the `--add-data` flags)*
+
+The compiled executable will be located in the `dist/` directory.
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE.md file for details.
+
+=== build.yml ===
+name: Build Windows Executable
+
+on:
+  [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run ci]')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build executable with PyInstaller
+        run: |
+          pyinstaller --noconsole --onefile --name MonsterBattle --icon=icon.ico --add-data "icon.ico;." --add-data "images;images" --add-data "audio;audio" code\main.py
+          
+      - name: Archive executable
+        run: |
+          Compress-Archive -Path dist\MonsterBattle.exe -DestinationPath dist\MonsterBattle-Windows.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MonsterBattle-Windows
+          path: dist/MonsterBattle-Windows.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Monster Battle v${{ github.run_number }}
+          files: dist/MonsterBattle-Windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
