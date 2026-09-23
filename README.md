@@ -6,6 +6,18 @@
 
 ## 📸 Screenshot
 
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+![pygame-ce](https://img.shields.io/badge/Library-pygame--ce-1D9BF0?logo=pygame&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
+![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=github-actions&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+
+</div>
+
+
+
 ![tetris](screenshot/1.png "Tetris")
 
 ## ✨ Features
@@ -66,4 +78,4 @@ The compiled executable will be located in the `dist/` directory.
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE.md file for details.
+This project is licensed under the [MIT License](LICENSE).
